@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Audition Javascript Edition</title>
+	<meta charset="utf-8">
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: sans-serif;
+		}
+
+		.arrows {
+			list-style: none;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+
+		.arrows .arrow {
+			font-size: 100px;
+			display: inline-block;
+			border: 1px solid black;
+			border-radius: 100%;
+			width: 150px;
+			height: 150px;
+			margin: 10px 20px;
+
+		}
+
+		.centered-everything {
+			width: 100%;
+			height: 100%;
+			display: grid;
+			align-content: center;
+			align-items: center;
+			justify-content: center;
+			justify-items: center;
+		}
+
+		#score {
+			text-align: center;
+			font-size: 100px;
+		}
+
+		#progress-container {
+			width: 80%;
+			height: 50px;
+			border: 2px solid #121212;
+			margin: 0 auto;
+		}
+
+		#progress-bar {
+			width: 100%;
+			height: 100%;
+			background-color: #BADA55;
+		}
+
+		#indicator-bar {
+			width: 30%;
+			height: 100%;
+			border-right: 5px solid #121212;
+			transform: translateY(-100%);
+		}
+
+		.intro {
+			display: grid;
+			align-items: center;
+			justify-content: center;
+			width: 100vw;
+			height: 100vh;
+		}
+
+		.game {
+			text-align: center;
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			z-index: -1;
+			display: grid;
+			align-items: center;
+			align-content: center;
+			grid-gap: 50px;
+		}
+
+		.hidden {
+			display: none;
+			pointer-events: none;
+		}
+
+		button {
+			text-align: center;
+			font-size: 100px;
+			padding: 40px;
+			background-color: #BADA55;
+			border: 2px solid #121212;
+			border-radius: 5px;
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		button:hover {
+			transform: scale(1.04);
+			transition: all 0.2s ease;
+		}
+
+		.retry {
+			z-index: 1;
+		}
+	</style>
+</head>
+<body>
+<div class="intro">
+	<button class="start">START</button>
+</div>
+
+<div class="game hidden">
+	<ul class="arrows">
+		
+	</ul>
+	<div class="container">
+		<div id="progress-container">
+			<div id="progress-bar">
+			</div>
+			<div id="indicator-bar"></div>
+		</div>
+		<h2 id="score">0</h2>
+		<h2 id="game-over"></h2>
+		<button class="retry hidden">RETRY</button>
+	</div>
+</div>
+
+<script>
+	const left = {key: 37, code: "\u2190"};
+	const up = {key: 38, code: "\u2191"};
+	const right = {key: 39, code: "\u2192"};
+	const down = {key: 40, code: "\u2193"};
+	const ENTER = 13;
+
+	const directions = [left, right, up, down];
+	const valid_keyCodes = directions.map(direction => direction.key);
+	let time_limit = 1000;
+	let score = 0;
+	let reward = 10;
+	let multiplier = 3;
+	let bonus_region = 30;
+	let time_remaining = time_limit;
+	let timer_interval;
+
+	const arrow_display = document.querySelector(".arrows");
+	
+
+	let arrow_array = [];
+	let inputs = [];
+	let round = 1;
+
+	function generateArrows(length){
+		for (let i=0;i<length;i++){
+			arrow_array.push(directions[Math.floor(Math.random()*directions.length)]);
+		}
+		return arrow_array;
+	}
+
+	function displayArrows(){
+		arrow_array.forEach(arrow => {
+			const li = document.createElement("li");
+			li.classList.add("arrow");
+			const div = document.createElement("div");
+			div.classList.add("centered-everything");
+			const node = document.createTextNode(arrow.code);
+
+			div.appendChild(node);
+			li.appendChild(div);
+			arrow_display.appendChild(li);
+		});
+	}
+
+	function handleInput(event){
+		const keyCode = event.keyCode;
+		if (valid_keyCodes.includes(keyCode) && inputs.length < arrow_array.length){
+			inputs.push(keyCode);
+		}
+
+		// only need to check last input
+		const index = inputs.length - 1;
+		if (inputs[index] === arrow_array[index].key) {
+			document.querySelectorAll(".arrow")[index].style.backgroundColor = "#BADA55";			
+			} else {
+			inputs = [];
+			document.querySelectorAll(".arrow").forEach(item => {
+				item.style.backgroundColor = "#f55d42";
+			});
+			setTimeout(function(){
+				document.querySelectorAll(".arrow").forEach(item => {
+				item.style.backgroundColor = "#ffffff";
+				});
+			},400);
+		}
+
+		// ON PRESSING ENTER
+		if (event.keyCode === ENTER && inputs.length === arrow_array.length){
+				document.body.style.backgroundColor = "#11FF11";
+				if (time_remaining/time_limit*100 < bonus_region){
+					score += reward*multiplier;
+					multiplier += 0.5;
+					if (bonus_region > 5){
+						bonus_region -= 5;
+					}
+				} else {
+					score += reward;
+				}
+
+				if (time_limit > 500){
+					time_limit -= 50;
+				}
+				document.querySelector("#score").innerText = score;
+				clearInterval(timer_interval);
+				setTimeout(()=>{
+					document.body.style.backgroundColor = "#FFFFFF";
+					init(++round);
+				}, 500);
+		}
+	}
+
+	function init_timer(){
+		document.querySelector("#progress-bar").style.width = 100 + "%";
+		time_remaining = time_limit;
+		timer_interval = setInterval(updateTimer, 1);
+	}
+
+	function updateTimer(){
+		if (time_remaining > 0){
+			time_remaining--;
+			document.querySelector("#progress-bar").style.width = time_remaining/time_limit*100 + "%";
+		} else {
+			gameOver();
+		}
+	}
+
+	function gameOver(){
+		document.querySelector("#game-over").innerText = "Game Over";
+		clearInterval(timer_interval);
+		document.removeEventListener("keydown", handleInput);
+		document.querySelector(".retry").classList.remove("hidden");
+		document.querySelector(".retry").addEventListener("click", retry);
+	}
+
+	function retry(){
+		document.querySelector(".retry").classList.add("hidden");
+		time_limit = 1000;
+		arrow_array = [];
+		round = 1;
+		score = 0;
+		reward = 10;
+		multiplier = 3;
+		bonus_region = 30;
+		init(round);
+	}
+
+	function init(length){
+		inputs = [];
+		arrow_array = [];
+		time_remaining = time_limit;
+		document.querySelector("#game-over").innerText = "";
+		document.querySelector("#score").innerText = score;
+		document.querySelector("#indicator-bar").style.width = bonus_region + "%";
+		document.querySelectorAll(".arrow").forEach((elem) => {
+			elem.remove();
+		});
+		generateArrows(length);
+		displayArrows();
+		init_timer();
+		document.querySelector(".retry").removeEventListener("click", retry);
+		document.addEventListener("keydown", handleInput);
+	}
+
+	function startGame(){
+		document.querySelector(".start").removeEventListener("click", startGame);
+		document.querySelector(".intro").classList.add("hidden");
+		document.querySelector(".game").classList.remove("hidden");
+		init(round);
+	}
+	document.querySelector(".start").addEventListener("click", startGame);
+
+
+	
+
+	
+
+</script>
+</body>
+</html>
