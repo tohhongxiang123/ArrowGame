@@ -69,6 +69,8 @@
 			display: grid;
 			align-items: center;
 			justify-content: center;
+			align-content: center;
+			grid-gap: 40px;
 			width: 100vw;
 			height: 100vh;
 		}
@@ -111,11 +113,23 @@
 		.retry {
 			z-index: 1;
 		}
+
+		#indicator-bar {
+			background: rgba(170, 170, 170, 0.3);
+		}
+
+		.text-center {
+			text-align: center;
+		}
 	</style>
 </head>
 <body>
 <div class="intro">
 	<button class="start">START</button>
+	<div class="text-center">
+		<h2>Press arrows according to the sequence displayed on screen</h2>
+		<h2>Hit enter when done, and hit enter in the bonus region to gain extra points.</h2>
+	</div>
 </div>
 
 <div class="game hidden">
@@ -191,10 +205,12 @@
 			document.querySelectorAll(".arrow")[index].style.backgroundColor = "#BADA55";			
 			} else {
 			inputs = [];
+			document.removeEventListener("keydown", handleInput);
 			document.querySelectorAll(".arrow").forEach(item => {
 				item.style.backgroundColor = "#f55d42";
 			});
 			setTimeout(function(){
+				document.addEventListener("keydown", handleInput);
 				document.querySelectorAll(".arrow").forEach(item => {
 				item.style.backgroundColor = "#ffffff";
 				});
